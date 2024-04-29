@@ -19,7 +19,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
-
+from sklearn.preprocessing import label_binarize
+from itertools import cycle
 import os
 import sys
 
@@ -54,6 +55,7 @@ df = df.drop('No._y', axis=1)
 
 # find unique values in the 'operations' column
 print(df['operation'].unique())
+df = df.drop('CA-125 after', axis=1)
 
 # Convert all operation, Diagnosis, method for avastin use, FIGO stage to lowercase
 df['operation'] = df['operation'].str.lower()
@@ -68,11 +70,9 @@ df = pd.get_dummies(df, columns=['operation', 'Diagnosis', 'method for avastin u
 
 df['CA-125 before'] = df['CA-125 before'].replace('H>200', 201)
 df['CA-125 before'] = df['CA-125 before'].replace('H> 200', 201)
-df['CA-125 after'] = df['CA-125 after'].replace('H>200', 201)
 
 # After replacing, convert them to float
 df['CA-125 before'] = df['CA-125 before'].astype(float)
-df['CA-125 after'] = df['CA-125 after'].astype(float)
 
 
 # subtract start date from end date to get avastin usage duration
@@ -93,103 +93,65 @@ df = df.applymap(lambda x: x.strip() if type(x)==str else x)
 
 # save cleaned data
 
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='CA-125 before', y='Treatment effect', data=df)
+plt.title('Boxplot of CA-125 Levels Before Treatment by Treatment Effect')
+plt.xlabel('Treatment Effect')
+plt.ylabel('CA-125 Before')
+plt.show()
 
-# # create histogram FIGURE 1!!!
-# sns.histplot(df ['Treatment effect' ])
-# plt.xlabel('treatment' )
-# plt.ylabel( 'Count')
-# plt.title('Histogram of treatment')
-# plt.show()
+# create histogram FIGURE 1!!!
+sns.histplot(df ['Treatment effect' ])
+plt.xlabel('treatment' )
+plt.ylabel( 'Count')
+plt.title('Histogram of treatment')
+plt.show()
+
+sns.histplot(df['BMI'])
+plt.xlabel('BMI')
+plt.ylabel('Count')
+plt.title("Histogram of BMI")
+plt.show()
+
+# plot relationship between BMI and CA-125 before variable
+sns.scatterplot(x='BMI', y='CA-125 before', data=df)
+plt.title('BMI vs CA-125 before')
+plt.show()
 
 
-# # Visualize the distribution of 'CA-125 before' and 'CA-125 after' treatments FIGURE 2
-# plt.figure(figsize=(10, 5))
 
-# plt.subplot(1, 2, 1)
-# plt.hist(df['CA-125 before'].dropna(), bins=30)
-# plt.title('Distribution of CA-125 before treatment')
+# box plot of CA-125 levels before and after treatment
+plt.figure(figsize=(10, 5))
 
-# plt.subplot(1, 2, 2)
-# plt.hist(df['CA-125 after'].dropna(), bins=30)
-# plt.title('Distribution of CA-125 after treatment')
-
-# plt.show()
+plt.subplot(1, 2, 1)
+sns.boxplot(x='Treatment effect', y='CA-125 before', data=df)
+plt.title('Boxplot of CA-125 before treatment')
 
 
-# plt.figure(figsize=(10, 5))
 
-# plt.subplot(1, 2, 1)
-# plt.hist(df['CA-125 before'].dropna(), bins=30)
-# plt.title('Distribution of CA-125 before treatment')
-
-# plt.subplot(1, 2, 2)
-# plt.hist(df['CA-125 after'].dropna(), bins=30)
-# plt.title('Distribution of CA-125 after treatment')
-# plt.show()
-
-# # Analyze the relationship between 'CA-125 before' and 'CA-125 after' treatments FIGURE 3
-# plt.scatter(df['CA-125 before'], df['CA-125 after'])
-# plt.xlabel('CA-125 before treatment')
-# plt.ylabel('CA-125 after treatment')
-# plt.title('Relationship between CA-125 before and after treatments')
-# plt.show()
-# #histogramn with the distribution of age
-# plt.hist(df['Age'], bins=10, alpha=0.5)
-# plt.title('Distribution of Age')
-# plt.show()
-
-# # plot relationship between BMI and CA-125 before variable
-# sns.scatterplot(x='BMI', y='CA-125 before', data=df)
-# plt.title('BMI vs CA-125 before')
-# plt.show()
-
-# # plot relationship between BMI and CA-125 after variable
-# sns.scatterplot(x='BMI', y='CA-125 after', data=df)
-# plt.title('BMI vs CA-125 after')
-# plt.show()
-
-# # box plot of CA-125 levels before and after treatment
-# plt.figure(figsize=(10, 5))
-
-# plt.subplot(1, 2, 1)
-# sns.boxplot(x='Treatment effect', y='CA-125 before', data=df)
-# plt.title('Boxplot of CA-125 before treatment')
-
-# plt.subplot(1, 2, 2)
-# sns.boxplot(x='Treatment effect', y='CA-125 after', data=df)
-# plt.title('Boxplot of CA-125 after treatment')
-# plt.show()
-
-# # heatmat correlation
-# plt.figure(figsize=(10, 8))
-# sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
-# plt.title('Correlation Heatmap')
-# plt.show()
+# heatmat correlation
+plt.figure(figsize=(10, 8))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap')
+plt.show()
 
 
 
 
-# graph age bmi etc
-# do long transform to edit distribution; less skew
-# binning
-# normalize features before split
-# paste categorical variables, string in directly, everything floats by the end
-#   FIGO stage 1-4, one hot encoding transform into 1,2,3,4
-# anaconda app, search for word conda within computer
 
 
-# # create a boxplot for 'duration of avastin use' grouped by 'Treatment effect'
-# plt.figure(figsize=(10, 6))
-# sns.boxplot(data=df, x='Treatment effect', y='duration of avastin use')
-# plt.title('Boxplot of Duration of Avastin Use Grouped by Treatment Effect')
-# plt.show()
 
-# # create a scatter plot for 'duration of avastin use' vs 'Age'
-# plt.figure(figsize=(10, 6))
-# sns.scatterplot(data=df, x='Age', y='duration of avastin use')
-# plt.title('Scatterplot of Duration of Avastin Use vs Age')
-# plt.show()
+# create a boxplot for 'duration of avastin use' grouped by 'Treatment effect'
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df, x='Treatment effect', y='duration of avastin use')
+plt.title('Boxplot of Duration of Avastin Use Grouped by Treatment Effect')
+plt.show()
 
+# create a scatter plot for 'duration of avastin use' vs 'Age'
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x='Age', y='duration of avastin use')
+plt.title('Scatterplot of Duration of Avastin Use vs Age')
+plt.show()
 
 
 
@@ -227,10 +189,6 @@ y = df['Treatment effect']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, stratify=y_train)
 
-# Assuming 'df' is your DataFrame
-# for col in df.columns:
-#     if df[col].astype(str).str.contains('7/18/08').any():
-#         print(f"'7/18/08' found in column: {col}")
 
 
 
@@ -238,7 +196,7 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 print('the types of datafiles that exist', df.dtypes)
 
 
-selected_features = ['CA-125 before', 'CA-125 after', 'Age',
+selected_features = ['CA-125 before', 'Age',
                      'number of avastin administration', 'BMI',
                      'operation_optimal debulking', 'operation_suboptimal debulking',
                      'Diagnosis_emac', 'method for avastin use_front line->maintenance',
@@ -267,61 +225,61 @@ print("Selected features:", selected_features)
 # X_test = X_test[selected_features]
 
 
-df.to_csv('combined_data2.csv', index=False)
 
 
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RepeatedKFold, cross_val_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import numpy as np
 
 # Perform model creation and cross-validation
-model = LogisticRegression()
+model = LogisticRegression(C=0.1, max_iter=1000)
 
 print(X_train.shape)
 
-# perform cross-validation
-# define the method
-cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state=1)
+try:
+    # perform cross-validation
+    cv = RepeatedKFold(n_splits=5, n_repeats=5, random_state=1)
+    cv_scores = cross_val_score(model, X_train, y_train, cv=cv)
+except Exception as e:
+    print(f"Error during cross-validation: {e}")
+    raise
 
-# compute cross-validation scores
-cv_scores = cross_val_score(model, X_train, y_train, cv=cv)
-
-# print out cross validation scores and their averages
 print(f"Cross-validation scores: {cv_scores}")
 print(f"Average cross-validation score: {np.mean(cv_scores)*100:.2f}%")
 
+try:
+    # train the model using the training set
+    model.fit(X_train, y_train)
+except Exception as e:
+    print(f"Error during model training: {e}")
+    raise
 
-# train the model using the training set
-model.fit(X_train, y_train)
-
-# use the trained model to predict the target variable in the validation set
+# Predict the target variable in the validation set
 y_pred_val = model.predict(X_val)
-
-
-
-
 
 # calculate the accuracy of the model on validation set
 accuracy_val = accuracy_score(y_val, y_pred_val)
 print(f"Validation Accuracy: {accuracy_val*100:.2f}%")
 
-# confusion matrix and classification report for validation set
 print("\nValidation Confusion Matrix:")
 print(confusion_matrix(y_val, y_pred_val))
 print("\nValidation Classification Report:")
 print(classification_report(y_val, y_pred_val))
 
-
-
-# predictions;use the trained model to predict the target variable in the test set
+# Predict the target variable in the test set
 y_pred_test = model.predict(X_test)
 
 # calculate the accuracy of the model on test set
 accuracy_test = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Accuracy: {accuracy_test*100:.2f}%")
 
-# confusion matrix and classification report for test set
 print("\nTest Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred_test))
 print("\nTest Classification Report:")
 print(classification_report(y_test, y_pred_test))
+
 
 
 # initialize StandardScaler
@@ -333,7 +291,7 @@ X_test_scaled = scaler.transform(X_test)
 
 # add Regularization to logistic regression model
 # L1 regularization
-model_l1 = LogisticRegression(max_iter=1000, penalty='l1', solver='liblinear')
+model_l1 = LogisticRegression(max_iter=1000, penalty='l1', solver='saga')
 model_l1.fit(X_train_scaled, y_train)
 y_pred_l1 = model_l1.predict(X_test_scaled)
 accuracy_l1 = accuracy_score(y_test, y_pred_l1)
@@ -458,12 +416,7 @@ plt.show()
 
 
 
-# # Drop columns where all values are NaN
-# df = df.dropna(axis=1, how='all')
 
-# # Now try creating the pairplot
-# sns.pairplot(df)
-# plt.show()
 
 
 
